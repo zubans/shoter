@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: shoter-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mydb}
+      POSTGRES_USER: ${DB_USER:-db_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-db_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - shoter-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-db_user} -d ${DB_NAME:-mydb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python Face Recognition Service
+  face-id:
+    build: 
+      context: ./shoter-face_ifentifier
+      dockerfile: Dockerfile
+    container_name: shoter-face-id
+    ports:
+      - "5001:5000"
+    networks:
+      - shoter-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Go Backend Server
+  server:
+    build:
+      context: ./shoter-backend
+      dockerfile: cmd/Dockerfile
+    container_name: shoter-server
+    ports:
+      - "8080:8080"
+      - "2345:2345"  # для отладки
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-mydb}
+      - DB_USER=${DB_USER:-db_user}
+      - DB_PASSWORD=${DB_PASSWORD:-db_pass}
+      - DATABASE_URI=postgres://${DB_USER:-db_user}:${DB_PASSWORD:-db_pass}@postgres:5432/${DB_NAME:-mydb}?sslmode=disable
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - JWT_SECRET=${JWT_SECRET:-secret}
+      - GIN_MODE=${GIN_MODE:-release}
+      - RUN_ADDRESS=0.0.0.0:${SERVER_PORT:-8080}
+      - SAVE_PROFILES_TO_DB=${SAVE_PROFILES_TO_DB:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      face-id:
+        condition: service_healthy
+    networks:
+      - shoter-network
+    restart: unless-stopped
+    volumes:
+      - ./shoter-backend:/app
+      - ./shoter-backend/logs:/app/logs
+
+volumes:
+  postgres_data:
+
+networks:
+  shoter-network:
+    driver: bridge
