@@ -1,0 +1,9 @@
+[submodule "shoter-backend"]
+	path = shoter-backend
+	url = git@github.com:zubans/shoter-backend.git
+[submodule "shoter-face_ifentifier"]
+	path = shoter-face_ifentifier
+	url = git@github.com:zubans/shoter-face_ifentifier.git
+[submodule "shoter-android_client"]
+	path = shoter-android_client
+	url = git@github.com:zubans/shoter-android_client.git
