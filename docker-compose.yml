@@ -57,8 +57,12 @@ services:
       - SERVER_PORT=${SERVER_PORT:-8080}
       - JWT_SECRET=${JWT_SECRET:-secret}
       - GIN_MODE=${GIN_MODE:-release}
+      - MODE=${MODE:-release}
       - RUN_ADDRESS=0.0.0.0:${SERVER_PORT:-8080}
       - SAVE_PROFILES_TO_DB=${SAVE_PROFILES_TO_DB:-true}
+      - FACE_SERVICE_URL=${FACE_SERVICE_URL:-http://face-id:5000}
+      - FACE_SERVICE_TIMEOUT=${FACE_SERVICE_TIMEOUT:-60s}
+      - PHOTOS_DIR=${PHOTOS_DIR:-/app/photos}
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,6 +74,7 @@ services:
     volumes:
       - ./shoter-backend:/app
       - ./shoter-backend/logs:/app/logs
+      - ./shoter-backend/photos:/app/photos
 
 volumes:
   postgres_data:
